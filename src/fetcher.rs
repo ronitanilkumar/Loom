@@ -1,4 +1,3 @@
-use anyhow::Result;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use std::sync::Arc;
@@ -51,7 +50,8 @@ pub async fn download_chunk(
             }
             Err(e) => {
                 println!("Chunk {} attempt {} failed: {}", chunk.index, attempt + 1, e);
-                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                let backoff_secs = 1u64 << (attempt + 1);
+                tokio::time::sleep(std::time::Duration::from_secs(backoff_secs)).await;
             }
         }
     }
@@ -64,11 +64,12 @@ pub async fn assemble_chunks(out_path: &str, num_chunks: usize) -> anyhow::Resul
 
     for i in 0..num_chunks {
         let part_path = format!("{}.part{}", out_path, i);
-        let bytes = tokio::fs::read(&part_path).await?;
-        output.write_all(&bytes).await?;
+        let mut reader = File::open(&part_path).await?;
+        tokio::io::copy(&mut reader, &mut output).await?;
+        drop(reader);
         tokio::fs::remove_file(&part_path).await?;
     }
 
-    println!("Assembled {} chunk into {}", num_chunks, out_path);
+    println!("Assembled {} chunks into {}", num_chunks, out_path);
     Ok(())
 }

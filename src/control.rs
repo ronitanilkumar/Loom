@@ -5,9 +5,9 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
-pub type NodeMap = Arc<Mutex<HashMap<String, Vec<String>>>>;
+pub type NodeMap = Arc<RwLock<HashMap<String, Vec<String>>>>;
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {
@@ -25,7 +25,7 @@ async fn register(
     State(map): State<NodeMap>,
     Json(req): Json<RegisterRequest>,
 ) -> Json<serde_json::Value> {
-    let mut map = map.lock().unwrap();
+    let mut map = map.write().unwrap();
     map.entry(req.model.clone())
         .or_insert_with(Vec::new)
         .push(req.node.clone());
@@ -36,13 +36,13 @@ async fn locate(
     Path(model): Path<String>,
     State(map): State<NodeMap>,
 ) -> Json<LocateResponse> {
-    let map = map.lock().unwrap();
+    let map = map.read().unwrap();
     let nodes = map.get(&model).cloned().unwrap_or_default();
     Json(LocateResponse { model, nodes })
 }
 
 pub fn router() -> Router {
-    let map: NodeMap = Arc::new(Mutex::new(HashMap::new()));
+    let map: NodeMap = Arc::new(RwLock::new(HashMap::new()));
     Router::new()
         .route("/register", post(register))
         .route("/locate/:model", get(locate))
