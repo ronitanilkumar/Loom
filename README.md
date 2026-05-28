@@ -21,7 +21,7 @@ A lightweight HTTP server that tracks which nodes have which models cached. Node
 
 ```bash
 # Download a model
-loom --url https://huggingface.co/.../model.gguf --out model.gguf --workers 8
+cargo run -- --url https://huggingface.co/.../model.gguf --out model.gguf --workers 8
 
 # Register a node
 curl -X POST http://localhost:3000/register \
