@@ -1,3 +1,4 @@
 *.part
 *.gguf
 target/
+.cache/

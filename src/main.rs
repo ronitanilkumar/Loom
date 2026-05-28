@@ -4,6 +4,7 @@ use reqwest;
 use std::sync::Arc;
 use fetcher::download_chunk;
 use tokio::sync::Semaphore;
+mod cache;
 
 #[derive(Parser, Debug)]
 #[command(name = "loom", about = "High-speed model weight fetcher")]
@@ -21,6 +22,14 @@ struct Args {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
+
+    let cache = cache::Cache::new(".cache");
+    let key = cache.key(&args.url);
+
+    if cache.exists(&key) {
+        cache.link(&key, &args.out)?;
+        return Ok(());
+    }
     
     let client = reqwest::Client::new();
 
@@ -63,6 +72,7 @@ async fn main() -> anyhow::Result<()> {
     println!("All chunks downloaded.");
     
     fetcher::assemble_chunks(&args.out, num_chunks).await?;
+    cache.store(&key, &args.out)?;
 
     Ok(())
 }
