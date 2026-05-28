@@ -58,3 +58,17 @@ pub async fn download_chunk(
 
     anyhow::bail!("Chunk {} failed after 3 attempts", chunk.index)
 }
+
+pub async fn assemble_chunks(out_path: &str, num_chunks: usize) -> anyhow::Result<()> {
+    let mut output = File::create(out_path).await?;
+
+    for i in 0..num_chunks {
+        let part_path = format!("{}.part{}", out_path, i);
+        let bytes = tokio::fs::read(&part_path).await?;
+        output.write_all(&bytes).await?;
+        tokio::fs::remove_file(&part_path).await?;
+    }
+
+    println!("Assembled {} chunk into {}", num_chunks, out_path);
+    Ok(())
+}

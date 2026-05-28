@@ -41,6 +41,7 @@ async fn main() -> anyhow::Result<()> {
     let client = Arc::new(client);
     let semaphore = Arc::new(Semaphore::new(args.workers));
     let mut handles = vec![];
+    let num_chunks = chunks.len();
 
     for chunk in chunks {
         let client = Arc::clone(&client);
@@ -60,6 +61,8 @@ async fn main() -> anyhow::Result<()> {
     }
 
     println!("All chunks downloaded.");
+    
+    fetcher::assemble_chunks(&args.out, num_chunks).await?;
 
     Ok(())
 }
