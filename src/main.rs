@@ -18,6 +18,10 @@ struct Args {
 
     #[arg(short, long, default_value_t = 10)]
     workers: usize,
+
+    /// Keep the control plane server running after download completes
+    #[arg(long)]
+    serve: bool,
 }
 
 #[tokio::main]
@@ -82,7 +86,9 @@ async fn main() -> anyhow::Result<()> {
         cache.store(&key, &args.out)?;
     }
 
-    tokio::signal::ctrl_c().await?;
-    println!("Shutting down.");
+    if args.serve {
+        tokio::signal::ctrl_c().await?;
+        println!("Shutting down.");
+    }
     Ok(())
 }
