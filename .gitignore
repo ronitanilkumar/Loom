@@ -2,3 +2,4 @@
 *.gguf
 target/
 .cache/
+benchmark.sh
